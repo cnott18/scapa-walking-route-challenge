@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  />
+
+  <title>SCAPA Walking Route Challenge</title>
+
+  <link
+    rel="stylesheet"
+    href="https://js.arcgis.com/4.33/esri/themes/light/main.css"
+  />
+
+  <script src="https://js.arcgis.com/4.33/"></script>
+
+  <style>
+    html,
+    body {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    /* -------------------------
+       WELCOME SCREEN
+    ------------------------- */
+
+    #welcomeScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .welcome-card {
+      width: 100%;
+      max-width: 520px;
+      text-align: center;
+    }
+
+    .welcome-badge {
+      display: inline-block;
+      padding: 7px 14px;
+      border-radius: 20px;
+      background: #eef3f6;
+      color: #34495e;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      margin-bottom: 18px;
+    }
+
+    .welcome-card h1 {
+      margin: 0 0 12px;
+      font-size: 32px;
+      line-height: 1.1;
+      color: #17324d;
+    }
+
+    .welcome-card .subtitle {
+      margin: 0 auto 26px;
+      max-width: 430px;
+      color: #536575;
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    .instructions {
+      text-align: left;
+      background: #f6f8fa;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+    }
+
+    .instruction-row {
+      display: flex;
+      gap: 13px;
+      margin-bottom: 15px;
+      align-items: flex-start;
+    }
+
+    .instruction-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .step-number {
+      flex: 0 0 28px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #17324d;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .step-text {
+      color: #34495e;
+      font-size: 15px;
+      line-height: 1.4;
+      padding-top: 3px;
+    }
+
+    .primary-button {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: #17324d;
+      color: #ffffff;
+      padding: 15px 18px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .primary-button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    /* -------------------------
+       APP / MAP
+    ------------------------- */
+
+    #app {
+      display: none;
+      position: fixed;
+      inset: 0;
+    }
+
+    #viewDiv {
+      position: absolute;
+      inset: 0;
+    }
+
+    #topBar {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+
+      width: calc(100% - 24px);
+      max-width: 620px;
+
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+
+      padding: 11px 12px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .app-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #17324d;
+      line-height: 1.2;
+    }
+
+    #infoButton {
+      flex: 0 0 auto;
+      border: 1px solid #d3dce4;
+      background: #ffffff;
+      color: #17324d;
+      border-radius: 7px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* -------------------------
+       BOTTOM PANEL
+    ------------------------- */
+
+    #bottomPanel {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      z-index: 20;
+
+      width: calc(100% - 24px);
+      max-width: 620px;
+
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22);
+
+      padding: 14px;
+    }
+
+    #selectionStatus {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    #selectionCount {
+      color: #17324d;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    #clearButton {
+      border: 0;
+      background: transparent;
+      color: #b33a3a;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    #participantName {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5dd;
+      border-radius: 7px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+
+    #participantName:focus {
+      border-color: #17324d;
+    }
+
+    #submitButton {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: #17324d;
+      color: #ffffff;
+      padding: 13px 15px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #submitButton:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #message {
+      display: none;
+      margin-top: 9px;
+      padding: 9px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .message-success {
+      display: block !important;
+      background: #e8f5e9;
+      color: #245c2a;
+    }
+
+    .message-error {
+      display: block !important;
+      background: #fdeaea;
+      color: #8b2424;
+    }
+
+    /* -------------------------
+       INFO MODAL
+    ------------------------- */
+
+    #infoModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 20px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 440px;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 22px;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-card h2 {
+      margin: 0 0 12px;
+      color: #17324d;
+      font-size: 22px;
+    }
+
+    .modal-card p {
+      color: #536575;
+      font-size: 15px;
+      line-height: 1.5;
+      margin: 0 0 12px;
+    }
+
+    #closeInfo {
+      width: 100%;
+      margin-top: 8px;
+      border: 0;
+      border-radius: 7px;
+      background: #17324d;
+      color: #ffffff;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* -------------------------
+       MOBILE
+    ------------------------- */
+
+    @media (max-width: 600px) {
+      .welcome-card h1 {
+        font-size: 27px;
+      }
+
+      .welcome-card .subtitle {
+        font-size: 16px;
+      }
+
+      #topBar {
+        top: 8px;
+        width: calc(100% - 16px);
+      }
+
+      #bottomPanel {
+        bottom: 8px;
+        width: calc(100% - 16px);
+      }
+
+      .esri-ui-top-left {
+        top: 62px !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- WELCOME SCREEN -->
+  <div id="welcomeScreen">
+    <div class="welcome-card">
+
+      <div class="welcome-badge">SCAPA CONFERENCE</div>
+
+      <h1>Walking Route Challenge</h1>
+
+      <p class="subtitle">
+        Show us how you walked to the conference.
+        Select the streets you used and submit your route.
+      </p>
+
+      <div class="instructions">
+
+        <div class="instruction-row">
+          <div class="step-number">1</div>
+          <div class="step-text">
+            Tap <strong>Start the Challenge</strong> to open the map.
+          </div>
+        </div>
+
+        <div class="instruction-row">
+          <div class="step-number">2</div>
+          <div class="step-text">
+            Tap each street segment you walked. Tap a selected street again to remove it.
+          </div>
+        </div>
+
+        <div class="instruction-row">
+          <div class="step-number">3</div>
+          <div class="step-text">
+            Enter your name and submit your completed walking route.
+          </div>
+        </div>
+
+      </div>
+
+      <button id="startButton" class="primary-button">
+        Start the Challenge
+      </button>
+
+    </div>
+  </div>
+
+
+  <!-- MAP APP -->
+  <div id="app">
+
+    <div id="viewDiv"></div>
+
+    <div id="topBar">
+      <div class="app-title">
+        SCAPA Walking Route Challenge
+      </div>
+
+      <button id="infoButton">
+        ⓘ How It Works
+      </button>
+    </div>
+
+    <div id="bottomPanel">
+
+      <div id="selectionStatus">
+        <div id="selectionCount">
+          0 street segments selected
+        </div>
+
+        <button id="clearButton">
+          Clear Route
+        </button>
+      </div>
+
+      <input
+        id="participantName"
+        type="text"
+        maxlength="100"
+        placeholder="Your name"
+        autocomplete="name"
+      />
+
+      <button id="submitButton" disabled>
+        Submit Route
+      </button>
+
+      <div id="message"></div>
+
+    </div>
+
+  </div>
+
+
+  <!-- INFO MODAL -->
+  <div id="infoModal">
+
+    <div class="modal-card">
+
+      <h2>How It Works</h2>
+
+      <p>
+        Tap the street segments that make up the route you walked to the conference.
+        Selected streets will be highlighted.
+      </p>
+
+      <p>
+        Tap a highlighted street again if you selected it by mistake.
+        When your route is complete, enter your name and tap
+        <strong>Submit Route</strong>.
+      </p>
+
+      <p>
+        Your selections will help SCAPA visualize how conference attendees moved
+        through downtown Columbia.
+      </p>
+
+      <button id="closeInfo">
+        Back to Map
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/Graphic"
+    ], function (
+      Map,
+      MapView,
+      FeatureLayer,
+      Graphic
+    ) {
+
+      /* ----------------------------------------------------
+         CONFIGURATION
+      ---------------------------------------------------- */
+
+      const ROAD_ITEM_ID =
+        "4aa8a8f52c434476b5e9a8ef5ff3ef33";
+
+      const SUBMISSION_ITEM_ID =
+        "570793051cec4f1a8d7501cba4668170";
+
+      const ROAD_LAYER_ID = 0;
+
+      const SUBMISSION_TABLE_ID = 1;
+
+
+      /* ----------------------------------------------------
+         ELEMENTS
+      ---------------------------------------------------- */
+
+      const welcomeScreen =
+        document.getElementById("welcomeScreen");
+
+      const app =
+        document.getElementById("app");
+
+      const startButton =
+        document.getElementById("startButton");
+
+      const infoButton =
+        document.getElementById("infoButton");
+
+      const infoModal =
+        document.getElementById("infoModal");
+
+      const closeInfo =
+        document.getElementById("closeInfo");
+
+      const clearButton =
+        document.getElementById("clearButton");
+
+      const participantName =
+        document.getElementById("participantName");
+
+      const submitButton =
+        document.getElementById("submitButton");
+
+      const selectionCount =
+        document.getElementById("selectionCount");
+
+      const message =
+        document.getElementById("message");
+
+
+      /* ----------------------------------------------------
+         SELECTED SEGMENTS
+      ---------------------------------------------------- */
+
+      const selectedSegments = new Map();
+
+      let highlightHandle = null;
+
+      let roadLayerView = null;
+
+      let submitting = false;
+
+
+      /* ----------------------------------------------------
+         ROAD LAYER
+         READ-ONLY PUBLIC REFERENCE VIEW
+      ---------------------------------------------------- */
+
+      const roadLayer = new FeatureLayer({
+
+        portalItem: {
+          id: ROAD_ITEM_ID
+        },
+
+        layerId: ROAD_LAYER_ID,
+
+        outFields: [
+          "OBJECTID",
+          "SegmentID"
+        ],
+
+        popupEnabled: false
+
+      });
+
+
+      /* ----------------------------------------------------
+         SUBMISSION TABLE
+         PUBLIC ADD-ONLY COLLECTION VIEW
+      ---------------------------------------------------- */
+
+      const submissionTable = new FeatureLayer({
+
+        portalItem: {
+          id: SUBMISSION_ITEM_ID
+        },
+
+        layerId: SUBMISSION_TABLE_ID
+
+      });
+
+
+      /* ----------------------------------------------------
+         MAP
+      ---------------------------------------------------- */
+
+      const map = new Map({
+        basemap: "streets-navigation-vector",
+        layers: [
+          roadLayer
+        ]
+      });
+
+
+      const view = new MapView({
+
+        container: "viewDiv",
+
+        map: map,
+
+        center: [
+          -81.035,
+          34.000
+        ],
+
+        zoom: 16,
+
+        constraints: {
+          snapToZoom: false
+        },
+
+        popup: {
+          autoOpenEnabled: false
+        }
+
+      });
+
+
+      /* ----------------------------------------------------
+         ROAD APPEARANCE
+      ---------------------------------------------------- */
+
+      roadLayer.renderer = {
+
+        type: "simple",
+
+        symbol: {
+
+          type: "simple-line",
+
+          color: [
+            80,
+            80,
+            80,
+            0.75
+          ],
+
+          width: 2.5
+
+        }
+
+      };
+
+
+      /* ----------------------------------------------------
+         START APP
+      ---------------------------------------------------- */
+
+      startButton.addEventListener(
+        "click",
+        function () {
+
+          welcomeScreen.style.display = "none";
+
+          app.style.display = "block";
+
+          view.resize();
+
+        }
+      );
+
+
+      /* ----------------------------------------------------
+         INFO WINDOW
+      ---------------------------------------------------- */
+
+      infoButton.addEventListener(
+        "click",
+        function () {
+
+          infoModal.style.display = "flex";
+
+        }
+      );
+
+
+      closeInfo.addEventListener(
+        "click",
+        function () {
+
+          infoModal.style.display = "none";
+
+        }
+      );
+
+
+      infoModal.addEventListener(
+        "click",
+        function (event) {
+
+          if (event.target === infoModal) {
+
+            infoModal.style.display = "none";
+
+          }
+
+        }
+      );
+
+
+      /* ----------------------------------------------------
+         GET ROAD LAYER VIEW
+      ---------------------------------------------------- */
+
+      view.whenLayerView(
+        roadLayer
+      ).then(function (layerView) {
+
+        roadLayerView = layerView;
+
+      });
+
+
+      /* ----------------------------------------------------
+         SELECT ROAD SEGMENTS
+      ---------------------------------------------------- */
+
+      view.on(
+        "click",
+        async function (event) {
+
+          if (submitting) {
+            return;
+          }
+
+          try {
+
+            const response =
+              await view.hitTest(
+                event,
+                {
+                  include: [
+                    roadLayer
+                  ]
+                }
+              );
+
+            const roadResult =
+              response.results.find(
+                function (result) {
+
+                  return (
+                    result.graphic &&
+                    result.graphic.layer === roadLayer
+                  );
+
+                }
+              );
+
+            if (!roadResult) {
+              return;
+            }
+
+            const graphic =
+              roadResult.graphic;
+
+            const segmentID =
+              graphic.attributes.SegmentID;
+
+            const objectID =
+              graphic.attributes.OBJECTID;
+
+            if (!segmentID) {
+              return;
+            }
+
+            if (
+              selectedSegments.has(
+                segmentID
+              )
+            ) {
+
+              selectedSegments.delete(
+                segmentID
+              );
+
+            } else {
+
+              selectedSegments.set(
+                segmentID,
+                objectID
+              );
+
+            }
+
+            updateSelectionDisplay();
+
+          } catch (error) {
+
+            console.error(
+              "Road selection error:",
+              error
+            );
+
+          }
+
+        }
+      );
+
+
+      /* ----------------------------------------------------
+         UPDATE HIGHLIGHT
+      ---------------------------------------------------- */
+
+      function updateSelectionDisplay() {
+
+        const count =
+          selectedSegments.size;
+
+        if (count === 1) {
+
+          selectionCount.textContent =
+            "1 street segment selected";
+
+        } else {
+
+          selectionCount.textContent =
+            count +
+            " street segments selected";
+
+        }
+
+        submitButton.disabled =
+          count === 0;
+
+
+        if (highlightHandle) {
+
+          highlightHandle.remove();
+
+          highlightHandle = null;
+
+        }
+
+
+        if (
+          roadLayerView &&
+          count > 0
+        ) {
+
+          const objectIDs =
+            Array.from(
+              selectedSegments.values()
+            );
+
+          highlightHandle =
+            roadLayerView.highlight(
+              objectIDs
+            );
+
+        }
+
+      }
+
+
+      /* ----------------------------------------------------
+         CLEAR ROUTE
+      ---------------------------------------------------- */
+
+      clearButton.addEventListener(
+        "click",
+        function () {
+
+          if (submitting) {
+            return;
+          }
+
+          selectedSegments.clear();
+
+          clearMessage();
+
+          updateSelectionDisplay();
+
+        }
+      );
+
+
+      /* ----------------------------------------------------
+         GENERATE ROUTE ID
+      ---------------------------------------------------- */
+
+      function createRouteID() {
+
+        if (
+          window.crypto &&
+          typeof window.crypto.randomUUID ===
+            "function"
+        ) {
+
+          return (
+            "SCAPA-" +
+            window.crypto.randomUUID()
+          );
+
+        }
+
+        return (
+          "SCAPA-" +
+          Date.now() +
+          "-" +
+          Math.random()
+            .toString(36)
+            .substring(2, 10)
+        );
+
+      }
+
+
+      /* ----------------------------------------------------
+         SUBMIT ROUTE
+      ---------------------------------------------------- */
+
+      submitButton.addEventListener(
+        "click",
+        async function () {
+
+          if (
+            submitting ||
+            selectedSegments.size === 0
+          ) {
+
+            return;
+
+          }
+
+
+          const participant =
+            participantName.value.trim();
+
+
+          if (!participant) {
+
+            showError(
+              "Please enter your name before submitting your route."
+            );
+
+            participantName.focus();
+
+            return;
+
+          }
+
+
+          submitting = true;
+
+          submitButton.disabled = true;
+
+          submitButton.textContent =
+            "Submitting...";
+
+          clearMessage();
+
+
+          const routeID =
+            createRouteID();
+
+          const selectDate =
+            new Date();
+
+
+          const addFeatures =
+            Array.from(
+              selectedSegments.keys()
+            ).map(
+              function (segmentID) {
+
+                return new Graphic({
+
+                  attributes: {
+
+                    SegmentID:
+                      segmentID,
+
+                    RouteID:
+                      routeID,
+
+                    Participant:
+                      participant,
+
+                    SelectDate:
+                      selectDate
+
+                  }
+
+                });
+
+              }
+            );
+
+
+          try {
+
+            const result =
+              await submissionTable.applyEdits({
+
+                addFeatures:
+                  addFeatures
+
+              });
+
+
+            const addResults =
+              result.addFeatureResults || [];
+
+
+            const successful =
+              addResults.filter(
+                function (item) {
+
+                  return !item.error;
+
+                }
+              );
+
+
+            if (
+              successful.length !==
+              addFeatures.length
+            ) {
+
+              throw new Error(
+                "One or more route segments could not be submitted."
+              );
+
+            }
+
+
+            showSuccess(
+              "Route submitted! Thank you for participating in the SCAPA Walking Route Challenge."
+            );
+
+
+            selectedSegments.clear();
+
+            updateSelectionDisplay();
+
+            participantName.value = "";
+
+
+          } catch (error) {
+
+            console.error(
+              "Submission error:",
+              error
+            );
+
+            showError(
+              "We couldn't submit your route. Please check your connection and try again."
+            );
+
+          } finally {
+
+            submitting = false;
+
+            submitButton.textContent =
+              "Submit Route";
+
+            submitButton.disabled =
+              selectedSegments.size === 0;
+
+          }
+
+        }
+      );
+
+
+      /* ----------------------------------------------------
+         MESSAGES
+      ---------------------------------------------------- */
+
+      function clearMessage() {
+
+        message.className = "";
+
+        message.style.display =
+          "none";
+
+        message.textContent = "";
+
+      }
+
+
+      function showSuccess(text) {
+
+        message.className =
+          "message-success";
+
+        message.textContent =
+          text;
+
+      }
+
+
+      function showError(text) {
+
+        message.className =
+          "message-error";
+
+        message.textContent =
+          text;
+
+      }
+
+
+      /* ----------------------------------------------------
+         INITIALIZE
+      ---------------------------------------------------- */
+
+      updateSelectionDisplay();
+
+    });
+
+  </script>
+
+</body>
+</html>
