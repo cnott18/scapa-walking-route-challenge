@@ -31,10 +31,6 @@
       box-sizing: border-box;
     }
 
-    /* -------------------------
-       WELCOME SCREEN
-    ------------------------- */
-
     #welcomeScreen {
       position: fixed;
       inset: 0;
@@ -131,15 +127,6 @@
       cursor: pointer;
     }
 
-    .primary-button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    /* -------------------------
-       APP / MAP
-    ------------------------- */
-
     #app {
       display: none;
       position: fixed;
@@ -157,16 +144,12 @@
       left: 50%;
       transform: translateX(-50%);
       z-index: 20;
-
       width: calc(100% - 24px);
       max-width: 620px;
-
       background: rgba(255, 255, 255, 0.97);
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-
       padding: 11px 12px;
-
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -192,24 +175,17 @@
       cursor: pointer;
     }
 
-    /* -------------------------
-       BOTTOM PANEL
-    ------------------------- */
-
     #bottomPanel {
       position: absolute;
       left: 50%;
       bottom: 14px;
       transform: translateX(-50%);
       z-index: 20;
-
       width: calc(100% - 24px);
       max-width: 620px;
-
       background: rgba(255, 255, 255, 0.98);
       border-radius: 12px;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22);
-
       padding: 14px;
     }
 
@@ -245,10 +221,6 @@
       font-size: 16px;
       margin-bottom: 10px;
       outline: none;
-    }
-
-    #participantName:focus {
-      border-color: #17324d;
     }
 
     #submitButton {
@@ -288,10 +260,6 @@
       background: #fdeaea;
       color: #8b2424;
     }
-
-    /* -------------------------
-       INFO MODAL
-    ------------------------- */
 
     #infoModal {
       display: none;
@@ -339,10 +307,6 @@
       cursor: pointer;
     }
 
-    /* -------------------------
-       MOBILE
-    ------------------------- */
-
     @media (max-width: 600px) {
       .welcome-card h1 {
         font-size: 27px;
@@ -371,7 +335,6 @@
 
 <body>
 
-  <!-- WELCOME SCREEN -->
   <div id="welcomeScreen">
     <div class="welcome-card">
 
@@ -417,7 +380,6 @@
   </div>
 
 
-  <!-- MAP APP -->
   <div id="app">
 
     <div id="viewDiv"></div>
@@ -435,6 +397,7 @@
     <div id="bottomPanel">
 
       <div id="selectionStatus">
+
         <div id="selectionCount">
           0 street segments selected
         </div>
@@ -442,6 +405,7 @@
         <button id="clearButton">
           Clear Route
         </button>
+
       </div>
 
       <input
@@ -463,7 +427,6 @@
   </div>
 
 
-  <!-- INFO MODAL -->
   <div id="infoModal">
 
     <div class="modal-card">
@@ -503,15 +466,11 @@
       "esri/layers/FeatureLayer",
       "esri/Graphic"
     ], function (
-      Map,
+      EsriMap,
       MapView,
       FeatureLayer,
       Graphic
     ) {
-
-      /* ----------------------------------------------------
-         CONFIGURATION
-      ---------------------------------------------------- */
 
       const ROAD_ITEM_ID =
         "4aa8a8f52c434476b5e9a8ef5ff3ef33";
@@ -520,13 +479,8 @@
         "570793051cec4f1a8d7501cba4668170";
 
       const ROAD_LAYER_ID = 0;
-
       const SUBMISSION_TABLE_ID = 1;
 
-
-      /* ----------------------------------------------------
-         ELEMENTS
-      ---------------------------------------------------- */
 
       const welcomeScreen =
         document.getElementById("welcomeScreen");
@@ -562,105 +516,101 @@
         document.getElementById("message");
 
 
-      /* ----------------------------------------------------
-         SELECTED SEGMENTS
-      ---------------------------------------------------- */
+      /*
+        Native JavaScript Map.
+        SegmentID = key
+        OBJECTID = value
+      */
 
-      const selectedSegments = new window.Map();
+      const selectedSegments =
+        new window.Map();
 
       let highlightHandle = null;
-
       let roadLayerView = null;
-
       let submitting = false;
 
 
-      /* ----------------------------------------------------
-         ROAD LAYER
-         READ-ONLY PUBLIC REFERENCE VIEW
-      ---------------------------------------------------- */
+      const roadLayer =
+        new FeatureLayer({
 
-      const roadLayer = new FeatureLayer({
+          portalItem: {
+            id: ROAD_ITEM_ID
+          },
 
-        portalItem: {
-          id: ROAD_ITEM_ID
-        },
+          layerId: ROAD_LAYER_ID,
 
-        layerId: ROAD_LAYER_ID,
+          outFields: [
+            "OBJECTID",
+            "SegmentID"
+          ],
 
-        outFields: [
-          "OBJECTID",
-          "SegmentID"
-        ],
+          popupEnabled: false
 
-        popupEnabled: false
-
-      });
+        });
 
 
-      /* ----------------------------------------------------
-         SUBMISSION TABLE
-         PUBLIC ADD-ONLY COLLECTION VIEW
-      ---------------------------------------------------- */
+      const submissionTable =
+        new FeatureLayer({
 
-      const submissionTable = new FeatureLayer({
+          portalItem: {
+            id: SUBMISSION_ITEM_ID
+          },
 
-        portalItem: {
-          id: SUBMISSION_ITEM_ID
-        },
+          layerId: SUBMISSION_TABLE_ID
 
-        layerId: SUBMISSION_TABLE_ID
-
-      });
+        });
 
 
-      /* ----------------------------------------------------
-         MAP
-      ---------------------------------------------------- */
+      const map =
+        new EsriMap({
 
-      const map = new Map({
-        basemap: "streets-navigation-vector",
-        layers: [
-          roadLayer
-        ]
-      });
+          basemap:
+            "streets-navigation-vector",
 
+          layers: [
+            roadLayer
+          ]
 
-      const view = new MapView({
-
-        container: "viewDiv",
-
-        map: map,
-
-        center: [
-          -81.035,
-          34.000
-        ],
-
-        zoom: 16,
-
-        constraints: {
-          snapToZoom: false
-        },
-
-        popup: {
-          autoOpenEnabled: false
-        }
-
-      });
+        });
 
 
-      /* ----------------------------------------------------
-         ROAD APPEARANCE
-      ---------------------------------------------------- */
+      const view =
+        new MapView({
+
+          container:
+            "viewDiv",
+
+          map:
+            map,
+
+          center: [
+            -81.035,
+            34.000
+          ],
+
+          zoom:
+            16,
+
+          constraints: {
+            snapToZoom: false
+          },
+
+          popup: {
+            autoOpenEnabled: false
+          }
+
+        });
+
 
       roadLayer.renderer = {
 
-        type: "simple",
+        type:
+          "simple",
 
         symbol: {
 
-          type: "simple-line",
+          type:
+            "simple-line",
 
           color: [
             80,
@@ -669,24 +619,23 @@
             0.75
           ],
 
-          width: 2.5
+          width:
+            2.5
 
         }
 
       };
 
 
-      /* ----------------------------------------------------
-         START APP
-      ---------------------------------------------------- */
-
       startButton.addEventListener(
         "click",
         function () {
 
-          welcomeScreen.style.display = "none";
+          welcomeScreen.style.display =
+            "none";
 
-          app.style.display = "block";
+          app.style.display =
+            "block";
 
           view.resize();
 
@@ -694,15 +643,12 @@
       );
 
 
-      /* ----------------------------------------------------
-         INFO WINDOW
-      ---------------------------------------------------- */
-
       infoButton.addEventListener(
         "click",
         function () {
 
-          infoModal.style.display = "flex";
+          infoModal.style.display =
+            "flex";
 
         }
       );
@@ -712,7 +658,8 @@
         "click",
         function () {
 
-          infoModal.style.display = "none";
+          infoModal.style.display =
+            "none";
 
         }
       );
@@ -722,9 +669,12 @@
         "click",
         function (event) {
 
-          if (event.target === infoModal) {
+          if (
+            event.target === infoModal
+          ) {
 
-            infoModal.style.display = "none";
+            infoModal.style.display =
+              "none";
 
           }
 
@@ -732,22 +682,25 @@
       );
 
 
-      /* ----------------------------------------------------
-         GET ROAD LAYER VIEW
-      ---------------------------------------------------- */
-
       view.whenLayerView(
         roadLayer
-      ).then(function (layerView) {
+      ).then(
+        function (layerView) {
 
-        roadLayerView = layerView;
+          roadLayerView =
+            layerView;
 
-      });
+        }
+      );
 
 
-      /* ----------------------------------------------------
-         SELECT ROAD SEGMENTS
-      ---------------------------------------------------- */
+      /*
+        ROAD SELECTION
+
+        Instead of requiring the user to hit the thin
+        line exactly, we create a small map-space box
+        around the click and query roads intersecting it.
+      */
 
       view.on(
         "click",
@@ -757,46 +710,200 @@
             return;
           }
 
+
           try {
 
-            const response =
-              await view.hitTest(
-                event,
-                {
-                  include: [
-                    roadLayer
-                  ]
-                }
-              );
+            const mapPoint =
+              event.mapPoint;
 
-            const roadResult =
-              response.results.find(
-                function (result) {
-
-                  return (
-                    result.graphic &&
-                    result.graphic.layer === roadLayer
-                  );
-
-                }
-              );
-
-            if (!roadResult) {
+            if (!mapPoint) {
               return;
             }
 
-            const graphic =
-              roadResult.graphic;
+
+            /*
+              Convert approximately 12 screen pixels
+              into map units at the current scale.
+            */
+
+            const tolerancePixels =
+              12;
+
+            const tolerance =
+              view.resolution *
+              tolerancePixels;
+
+
+            const query =
+              roadLayer.createQuery();
+
+
+            query.geometry = {
+
+              type:
+                "extent",
+
+              xmin:
+                mapPoint.x -
+                tolerance,
+
+              ymin:
+                mapPoint.y -
+                tolerance,
+
+              xmax:
+                mapPoint.x +
+                tolerance,
+
+              ymax:
+                mapPoint.y +
+                tolerance,
+
+              spatialReference:
+                mapPoint.spatialReference
+
+            };
+
+
+            query.spatialRelationship =
+              "intersects";
+
+            query.returnGeometry =
+              true;
+
+            query.outFields = [
+              "OBJECTID",
+              "SegmentID"
+            ];
+
+
+            const result =
+              await roadLayer.queryFeatures(
+                query
+              );
+
+
+            if (
+              !result.features ||
+              result.features.length === 0
+            ) {
+
+              return;
+
+            }
+
+
+            /*
+              If multiple streets fall inside the
+              tolerance box, determine which line
+              is visually closest to the click.
+            */
+
+            let closestFeature =
+              null;
+
+            let closestDistance =
+              Infinity;
+
+
+            result.features.forEach(
+              function (feature) {
+
+                const geometry =
+                  feature.geometry;
+
+                if (
+                  !geometry ||
+                  !geometry.paths
+                ) {
+
+                  return;
+
+                }
+
+
+                geometry.paths.forEach(
+                  function (path) {
+
+                    for (
+                      let i = 0;
+                      i <
+                      path.length - 1;
+                      i++
+                    ) {
+
+                      const p1 =
+                        path[i];
+
+                      const p2 =
+                        path[i + 1];
+
+
+                      const distance =
+                        pointToSegmentDistance(
+                          mapPoint.x,
+                          mapPoint.y,
+                          p1[0],
+                          p1[1],
+                          p2[0],
+                          p2[1]
+                        );
+
+
+                      if (
+                        distance <
+                        closestDistance
+                      ) {
+
+                        closestDistance =
+                          distance;
+
+                        closestFeature =
+                          feature;
+
+                      }
+
+                    }
+
+                  }
+                );
+
+              }
+            );
+
+
+            if (!closestFeature) {
+              return;
+            }
+
+
+            const attributes =
+              closestFeature.attributes;
+
 
             const segmentID =
-              graphic.attributes.SegmentID;
+              attributes.SegmentID;
+
 
             const objectID =
-              graphic.attributes.OBJECTID;
+              attributes.OBJECTID;
 
-            if (!segmentID) {
+
+            if (
+              !segmentID ||
+              objectID === undefined ||
+              objectID === null
+            ) {
+
+              console.warn(
+                "Selected road is missing SegmentID or OBJECTID.",
+                attributes
+              );
+
               return;
+
             }
+
 
             if (
               selectedSegments.has(
@@ -817,7 +924,9 @@
 
             }
 
+
             updateSelectionDisplay();
+
 
           } catch (error) {
 
@@ -832,14 +941,99 @@
       );
 
 
-      /* ----------------------------------------------------
-         UPDATE HIGHLIGHT
-      ---------------------------------------------------- */
+      /*
+        Distance from a point to a line segment.
+      */
+
+      function pointToSegmentDistance(
+        px,
+        py,
+        x1,
+        y1,
+        x2,
+        y2
+      ) {
+
+        const dx =
+          x2 - x1;
+
+        const dy =
+          y2 - y1;
+
+
+        if (
+          dx === 0 &&
+          dy === 0
+        ) {
+
+          const sx =
+            px - x1;
+
+          const sy =
+            py - y1;
+
+          return Math.sqrt(
+            sx * sx +
+            sy * sy
+          );
+
+        }
+
+
+        let t =
+          (
+            (px - x1) * dx +
+            (py - y1) * dy
+          ) /
+          (
+            dx * dx +
+            dy * dy
+          );
+
+
+        t =
+          Math.max(
+            0,
+            Math.min(
+              1,
+              t
+            )
+          );
+
+
+        const nearestX =
+          x1 +
+          t * dx;
+
+        const nearestY =
+          y1 +
+          t * dy;
+
+
+        const distanceX =
+          px -
+          nearestX;
+
+        const distanceY =
+          py -
+          nearestY;
+
+
+        return Math.sqrt(
+          distanceX *
+          distanceX +
+          distanceY *
+          distanceY
+        );
+
+      }
+
 
       function updateSelectionDisplay() {
 
         const count =
           selectedSegments.size;
+
 
         if (count === 1) {
 
@@ -854,6 +1048,7 @@
 
         }
 
+
         submitButton.disabled =
           count === 0;
 
@@ -862,7 +1057,8 @@
 
           highlightHandle.remove();
 
-          highlightHandle = null;
+          highlightHandle =
+            null;
 
         }
 
@@ -877,6 +1073,7 @@
               selectedSegments.values()
             );
 
+
           highlightHandle =
             roadLayerView.highlight(
               objectIDs
@@ -887,10 +1084,6 @@
       }
 
 
-      /* ----------------------------------------------------
-         CLEAR ROUTE
-      ---------------------------------------------------- */
-
       clearButton.addEventListener(
         "click",
         function () {
@@ -898,6 +1091,7 @@
           if (submitting) {
             return;
           }
+
 
           selectedSegments.clear();
 
@@ -908,10 +1102,6 @@
         }
       );
 
-
-      /* ----------------------------------------------------
-         GENERATE ROUTE ID
-      ---------------------------------------------------- */
 
       function createRouteID() {
 
@@ -928,6 +1118,7 @@
 
         }
 
+
         return (
           "SCAPA-" +
           Date.now() +
@@ -939,10 +1130,6 @@
 
       }
 
-
-      /* ----------------------------------------------------
-         SUBMIT ROUTE
-      ---------------------------------------------------- */
 
       submitButton.addEventListener(
         "click",
@@ -975,9 +1162,11 @@
           }
 
 
-          submitting = true;
+          submitting =
+            true;
 
-          submitButton.disabled = true;
+          submitButton.disabled =
+            true;
 
           submitButton.textContent =
             "Submitting...";
@@ -987,6 +1176,7 @@
 
           const routeID =
             createRouteID();
+
 
           const selectDate =
             new Date();
@@ -1034,7 +1224,8 @@
 
 
             const addResults =
-              result.addFeatureResults || [];
+              result.addFeatureResults ||
+              [];
 
 
             const successful =
@@ -1068,7 +1259,8 @@
 
             updateSelectionDisplay();
 
-            participantName.value = "";
+            participantName.value =
+              "";
 
 
           } catch (error) {
@@ -1078,13 +1270,16 @@
               error
             );
 
+
             showError(
               "We couldn't submit your route. Please check your connection and try again."
             );
 
+
           } finally {
 
-            submitting = false;
+            submitting =
+              false;
 
             submitButton.textContent =
               "Submit Route";
@@ -1098,18 +1293,16 @@
       );
 
 
-      /* ----------------------------------------------------
-         MESSAGES
-      ---------------------------------------------------- */
-
       function clearMessage() {
 
-        message.className = "";
+        message.className =
+          "";
 
         message.style.display =
           "none";
 
-        message.textContent = "";
+        message.textContent =
+          "";
 
       }
 
@@ -1135,10 +1328,6 @@
 
       }
 
-
-      /* ----------------------------------------------------
-         INITIALIZE
-      ---------------------------------------------------- */
 
       updateSelectionDisplay();
 
